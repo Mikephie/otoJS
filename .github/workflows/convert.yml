@@ -1,0 +1,52 @@
+name: Convert Scripts
+
+on:
+  push:
+    paths:
+      - 'QuantumultX/**/*.js'
+      - 'QuantumultX/**/*.conf'
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+          
+      - name: Install dependencies
+        run: |
+          npm install -g typescript ts-node
+          npm install fs-extra @types/fs-extra @types/node
+          
+      - name: Create directories
+        run: |
+          mkdir -p Loon/plugins
+          mkdir -p Surge/modules
+          
+      - name: Run conversion script
+        run: ts-node scripts/convert.ts
+        
+      - name: Configure Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+      - name: Commit changes
+        run: |
+          git add Loon/ Surge/ .script_hashes.json
+          if ! git diff --staged --quiet; then
+            git commit -m "Auto convert scripts: $(date +'%Y-%m-%d %H:%M:%S')"
+            git push
+          else
+            echo "No changes to commit"
+          fi
