@@ -1,0 +1,71 @@
+这个错误提示是关于工作流文件中的YAML语法错误。解决方法是创建一个新的、更简洁的工作流文件来替换有问题的文件。以下是具体步骤：
+
+1. 删除现有的 `.github/workflows/convert-scripts.yml` 文件
+2. 创建一个新的、简洁的工作流文件
+
+以下是一个简洁的工作流文件，应该不会有YAML语法错误：
+
+```yaml
+name: Convert Scripts
+
+on:
+  push:
+    paths:
+      - 'QuantumultX/**/*.js'
+      - 'QuantumultX/**/*.conf'
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+          
+      - name: Install dependencies
+        run: |
+          npm install -g typescript ts-node
+          npm install fs-extra @types/fs-extra @types/node
+          
+      - name: Create directories
+        run: |
+          mkdir -p Loon/plugins
+          mkdir -p Surge/modules
+          
+      - name: Run conversion script
+        run: ts-node scripts/convert.ts
+        
+      - name: Configure Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+      - name: Commit changes
+        run: |
+          git add Loon/ Surge/ .script_hashes.json
+          if ! git diff --staged --quiet; then
+            git commit -m "Auto convert scripts: $(date +'%Y-%m-%d %H:%M:%S')"
+            git push
+          else
+            echo "No changes to commit"
+          fi
+```
+
+关于 `import * as fs from 'fs-extra';` 的错误，请确保这行代码位于 `scripts/convert.ts` 文件中，而不是在工作流YAML文件中。
+
+请按以下步骤操作：
+
+1. 删除当前的 `.github/workflows/convert-scripts.yml` 文件
+2. 创建新文件 `.github/workflows/convert.yml`，并粘贴上面的代码
+3. 确保 `scripts/convert.ts` 文件存在并包含我之前提供的转换脚本代码
+
+这样应该能解决YAML语法错误问题。​​​​​​​​​​​​​​​​
